@@ -4,7 +4,7 @@
 use_frameworks!
 
 target 'NYCMetalScene' do
-    pod 'Alamofire', '~> 3.4'
-    pod 'Kanna', '~> 1.1.0'
+    pod 'Alamofire', '~>4.0.0'
+    pod 'Kanna', '~> 3.0.0'
 end
 
