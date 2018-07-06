@@ -12,7 +12,6 @@ import Alamofire
 
 class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
   
-  var html: String? = nil
   var shows: [Show] = []
   
   let showConcertInfoSegueIdentifier = "ShowConcertInfoSegue"
@@ -24,7 +23,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     super.viewDidLoad()
     metalShowTableView.delegate = self
     metalShowTableView.dataSource = self
-    self.scrapeNYCMetalScene()
+    scrapeNYCMetalScene()
   }
   
   override func didReceiveMemoryWarning() {
@@ -34,13 +33,11 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
   
   // Grabs the HTML from nycmetalscene.com for parsing.
   func scrapeNYCMetalScene() -> Void {
-    
-    
     Alamofire.request("http://nycmetalscene.com", method: .get).responseString { response in
       print("Success: \(response.result.isSuccess)")
-      self.html = response.result.value
-      self.parseHTML(response.result.value!)
-      
+      if let html = response.result.value {
+        self.parseHTML(html)
+      }
     }
   }
   
@@ -48,20 +45,21 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     if let doc = try? Kanna.HTML(html: html, encoding: String.Encoding.utf8) {
       shows = []
       
-      // Search for nodes by CSS
+      // Search for nodes by CSS selector
       for show in doc.css("td[id^='Text']") {
         
         // Get the link associated with this show.
         let link = show.css("a").first?["href"]
         
         // Strip the string of surrounding whitespace.
-        let showString = show.text!.trimmingCharacters(in: .whitespacesAndNewlines)
-        if showString.characters.count > 2 {
+        let showString = show.text?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) ?? ""
+        
+        if showString.count > 2 {
           // All text involving shows on this page currently start with the weekday.
           // Weekday formatting is inconsistent, but the first three letters are always there.
           let regex = try! NSRegularExpression(pattern: "^(mon|tue|wed|thu|fri|sat|sun)", options: [.caseInsensitive])
           
-          if regex.firstMatch(in: showString, options: [], range: NSMakeRange(0, showString.characters.count)) != nil {
+          if regex.firstMatch(in: showString, options: [], range: NSMakeRange(0, showString.count)) != nil {
             let showSplit = showString.components(separatedBy: ":")
             let date = showSplit[0]
             
@@ -83,11 +81,9 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             } else {
               shows.append(Show(date: date, description: description, venue: venue, link: ""))
             }
-            
           }
         }
       }
-      
       self.metalShowTableView.reloadData()
     }
   }
